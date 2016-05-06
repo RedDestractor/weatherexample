@@ -17,6 +17,7 @@ import json
 import datetime
 import requests
 
+APPID="INSERT API KEY HERE"
 
 class LocationButton(ListItemButton):
     location = ListProperty()
@@ -44,19 +45,21 @@ class AddLocationForm(ModalView):
     @mainthread
     def on_location(self, **kwargs):
         search_template = "http://api.openweathermap.org/data/2.5/"+\
-                "weather?lat={}&lon={}"
-        search_url = search_template.format(kwargs['lat'], kwargs['lon'])
+                "weather?lat={}&lon={}&APPID={}"
+        search_url = search_template.format(kwargs['lat'], kwargs['lon'], APPID)
         data = requests.get(search_url).json()
         location = (data['sys']['country'], data['name'])
         WeatherApp.get_running_app().root.show_current_weather(location)
 
     def search_location(self):
         search_template = "http://api.openweathermap.org/data/2.5/"\
-                +"find?q={}&type=like"
-        search_url = search_template.format(self.search_input.text)
+                +"find?q={}&type=like&APPID={}"
+        search_url = search_template.format(self.search_input.text, APPID)
         request= UrlRequest(search_url, self.found_location)
 
     def found_location(self, request, data):
+        print request
+        print data
         if data['cod'] != '404':
             cities = [(d['name'], d['sys']['country']) for d in data['list']]
 
@@ -88,14 +91,16 @@ class CurrentWeather(GestureBox):
         config = WeatherApp.get_running_app().config
         temp_type = config.getdefault("General", "temp_type", "metric").lower()
         weather_template = "http://api.openweathermap.org/data/2.5/" +\
-                "weather?q={},{}&units={}"
+                "weather?q={},{}&units={}&APPID={}"
         weather_url = weather_template.format(
                 self.location[0],
                 self.location[1],
-                temp_type)
+                temp_type,
+                APPID)
         request = UrlRequest(weather_url, self.weather_retrieved)
 
     def weather_retrieved(self, request, data):
+        print request, data
         self.conditions = data['weather'][0]['description']
         self.temp = data['main']['temp']
         self.temp_min = data['main']['temp_min']
@@ -113,16 +118,18 @@ class Forecast(GestureBox):
         config = WeatherApp.get_running_app().config
         temp_type = config.getdefault("General", "temp_type", "metric").lower()
         weather_template = "http://api.openweathermap.org/data/2.5/forecast/"+\
-                "daily?q={},{}&units={}&cnt=3"
+                "daily?q={},{}&units={}&cnt=3&APPID={}"
         weather_url = weather_template.format(
              self.location[0],
              self.location[1],
-             temp_type)
+             temp_type,
+             APPID)
         request = UrlRequest(weather_url, self.weather_retrieved)
 
 
 
     def weather_retrieved(self, request, data):
+        print request, data
         self.forecast_container.clear_widgets()
         for day in data['list']:
             label = Factory.ForecastLabel()
